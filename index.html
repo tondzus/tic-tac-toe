@@ -4,10 +4,27 @@
 <meta charset="UTF-8">
 <title>Tic Tac Toe</title>
 <script src="tic-tac-toe.js"></script>
+<style>
+body {
+	background-color: #ececec;
+}
+.center {
+	width: 100%;
+	text-align: center;
+}
+#game-canvas {
+	background-color: #FFFFFF;
+	display: inline-block;
+	box-shadow: 10px 10px 5px #888888;
+}
+</style>
 </head>
 <body>
-<div id="tic-tac-toe">
-	<canvas id="game-canvas" width="300" height="300"></canvas>
+<div id="tic-tac-toe" class="center">
+	<h1>Tic Tac Toe</h1>
+	<canvas id="game-canvas">
+	Your browser does not support canvas element :(
+	</canvas>
 </div>
 </body>
 </html>
