@@ -271,14 +271,18 @@ function userInput(canvas, conf, board, event) {
 }
 
 function startGame() {
-	var canvas = document.getElementById("game-canvas");
+	var canvas = document.getElementById("game-canvas"),
+			canvasClone = canvas.cloneNode(true);
+	canvas.parentNode.replaceChild(canvasClone, canvas);
+	canvas = canvasClone;
+
 	var conf = {
 		"square-size": 150,
 		"max-x-size": 700,
 		"max-y-size": 550,
-		"win-size": 4,
-		"size-x": 14,
-		"size-y": 7,
+		"win-size": parseFloat(document.getElementById("length").value),
+		"size-x": parseFloat(document.getElementById("width").value),
+		"size-y": parseFloat(document.getElementById("height").value),
 		"scale": 0.6,
 		"next-move": "x"
 	};
@@ -297,4 +301,13 @@ function startGame() {
 	canvas.addEventListener('click', userInputListener);
 }
 
-window.onload = startGame;
+function formStart(event) {
+	event.preventDefault();
+	startGame();
+}
+
+window.onload = function() {
+	var form = document.getElementById("game-form");
+	form.addEventListener('submit', formStart);
+	startGame();
+};
