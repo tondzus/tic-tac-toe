@@ -1,11 +1,68 @@
-function Analyzer(conf) {
-	this.winSize = conf['win-size'];
-	this.counter = 0;
-	this.lastMark = '';
+function Analyzer(conf, board) {
+	this.conf = conf;
+	this.board = board;
+	this.analyze = analyzerAnalyze;
 	this.update = analyzerUpdate;
-	this.hasWinner = analyzerHasWinner;
-	this.winner = analyzerWinner;
 	this.reset = analyzerReset;
+	this.hasWinner = analyzerHasWinner;
+	this.reset();
+}
+
+function analyzerAnalyze(move) {
+	var x = 0, y = 0, d = 0, start = 0, stop = 0,
+			sx = this.conf['size-x'], sy = this.conf['size-y'];
+	console.log(move.x + ' ' + move.y + '   ' + sx + ' ' + sy);
+
+	this.reset();
+	for(x=0; x < sx; x++) {
+		this.update(this.board[x][move.y]);
+		if(this.hasWinner()) {
+			this.winningLine = {
+				"start-x": x - this.conf['win-size'] + 1,	"start-y": move.y,
+				"stop-x": x, "stop-y": move.y};
+			return;
+		}
+	}
+
+	this.reset();
+	for(y=0; y < sy; y++) {
+		this.update(this.board[move.x][y]);
+		if(this.hasWinner()) {
+			this.winningLine = {
+				"start-x": move.x,	"start-y": y - this.conf['win-size'] + 1,
+				"stop-x": move.x, "stop-y": y};
+			return;
+		}
+	}
+
+	this.reset();
+	start = -Math.min(move.x, move.y);
+	stop = Math.min(sx - move.x, sy - move.y);
+	for(d=start; d < stop; d++) {
+		this.update(this.board[move.x + d][move.y + d]);
+		if(this.hasWinner()) {
+			this.winningLine = {
+				"start-x": move.x + d - this.conf['win-size'] + 1,
+				"start-y": move.y + d - this.conf['win-size'] + 1,
+				"stop-x": move.x + d, "stop-y": move.y + d};
+			return;
+		}
+	}
+
+	this.reset();
+	start = -Math.min(sx - move.x - 1, move.y);
+	stop = Math.min(move.x, sy - move.y + 1);
+	console.log('start ' + start + ' ,stop ' + stop);
+	for(d=start; d <= stop; d++) {
+		this.update(this.board[move.x - d][move.y + d]);
+		if(this.hasWinner()) {
+			this.winningLine = {
+				"start-x": move.x - d + this.conf['win-size'] - 1,
+				"start-y": move.y + d - this.conf['win-size'] + 1,
+				"stop-x": move.x - d, "stop-y": move.y + d};
+			return;
+		}
+	}
 }
 
 function analyzerUpdate(mark) {
@@ -31,11 +88,7 @@ function analyzerUpdate(mark) {
 }
 
 function analyzerHasWinner() {
-	return this.winSize == this.counter;
-}
-
-function analyzerWinner() {
-	return this.lastMark;
+	return this.conf['win-size'] == this.counter;
 }
 
 function analyzerReset() {
@@ -155,7 +208,7 @@ function redraw(canvas, conf, board) {
 	drawPieces(canvas, conf, board);
 }
 
-function animateDraw(draw, ctx, conf, x, y) {
+function animateDraw(draw, ctx, conf, x, y, analyzer) {
 	var progress = 0.0;
 	var positions = getPosition(x, y, conf);
 	var bgSize = conf['background-size'];
@@ -171,8 +224,25 @@ function animateDraw(draw, ctx, conf, x, y) {
 		progress += 0.05;
 		ctx.fillStyle = 'white';
 		draw(ctx, conf, x, y, progress);
+		if(progress >= 1.0) {
+			if(analyzer.hasWinner())
+				drawWinningLine(ctx, conf, analyzer);
+		}
 	};
 	var intervalId = setInterval(call, 10);
+}
+
+function drawWinningLine(ctx, conf, analyzer) {
+	var startX = analyzer.winningLine['start-x'] + 0.5,
+			startY = analyzer.winningLine['start-y'] + 0.5,
+			stopX = analyzer.winningLine['stop-x'] + 0.5,
+			stopY = analyzer.winningLine['stop-y'] + 0.5;
+	ctx.beginPath();
+	ctx.moveTo(startX * conf['step-x'], startY * conf['step-y']);
+	ctx.lineTo(stopX * conf['step-x'], stopY * conf['step-y']);
+	ctx.strokeStyle = 'green';
+	ctx.lineWidth = conf['piece-size'] + 2;
+	ctx.stroke();
 }
 
 function userInput(canvas, conf, board, event) {
@@ -181,71 +251,23 @@ function userInput(canvas, conf, board, event) {
 	var x = Math.floor(xPix / conf['step-x']),
 			y = Math.floor(yPix / conf['step-y']);
 
-	if(board[x][y] == '-') {
-		board[x][y] = conf['next-move'];
-		if(conf['next-move'] == 'x') {
-			conf['next-move'] = 'o';
-			animateDraw(drawX, canvas.getContext('2d'), conf, x, y);
-		}else {
-			conf['next-move'] = 'x';
-			animateDraw(drawO, canvas.getContext('2d'), conf, x, y);
-		}
-	}
-}
-
-function checkVictory(canvas, conf, board) {
-	var analyzer = new Analyzer(conf), x = 0, y = 0, dia = 0;
-	var sx = conf['size-x'], sy = conf['size-y'], startX = 0, startY = 0;
-
-	// horizontal check
-	for(x=0; x < sx; x++) {
-		analyzer.reset();
-		for(y=0; y < sy; y++) {
-			analyzer.update(board[x][y]);
-			if(analyzer.hasWinner()) {
-				return analyzer.winner();
-			}
-		}
+	if(board[x][y] != '-') {
+		return;
 	}
 
-	// vertical check
-	analyzer.reset();
-	for(y=0; y < sy; y++) {
-		analyzer.reset();
-		for(x=0; x < sx; x++) {
-			analyzer.update(board[x][y]);
-			if(analyzer.hasWinner()) {
-				return analyzer.winner();
-			}
-		}
+	board[x][y] = conf['next-move'];
+	if(conf['next-move'] == 'x') {
+		conf['next-move'] = 'o';
+		drawFunc = drawX;
+	}else {
+		conf['next-move'] = 'x';
+		drawFunc = drawO;
 	}
 
-	// diagonal check
-	for(dia=conf['win-size']-1; dia < (sx + sy - 1); dia++) {
-		analyzer.reset();
-		startX = Math.max(0, dia - sy - 1);
-		startY = Math.max(0, sy - 1 - dia);
-		for(x=startX, y=startY; (x < sx) && (y < sy); x++, y++) {
-			analyzer.update(board[x][y]);
-			if(analyzer.hasWinner()) {
-				return analyzer.winner();
-			}
-		}
-	}
-
-	// anti-diagonal check
-	for(dia=conf['win-size']-1; dia < (sx + sy - 1); dia++) {
-		analyzer.reset();
-		startX = sx - Math.max(0, dia - sy - 1) - 1;
-		startY = Math.max(0, sy - 1 - dia);
-		for(x=startX, y=startY; (x >= 0) && (y < sy); x--, y++) {
-			analyzer.update(board[x][y]);
-			if(analyzer.hasWinner()) {
-				return analyzer.winner();
-			}
-		}
-	}
-	return null;
+	var analyzer = new Analyzer(conf, board);
+	analyzer.analyze({"x": x, "y": y});
+	animateDraw(drawFunc, canvas.getContext('2d'), conf, x, y, analyzer);
+	return analyzer.hasWinner();
 }
 
 function startGame() {
@@ -267,10 +289,8 @@ function startGame() {
 
 	var userInputListener = function(event) {
 		redraw(canvas, conf, board);
-		userInput(canvas, conf, board, event);
-		victorious = checkVictory(canvas, conf, board);
-		console.log(victorious);
-		if(victorious !== null)
+		gameEnded = userInput(canvas, conf, board, event);
+		if(gameEnded)
 			canvas.removeEventListener('click', userInputListener);
 	};
 
