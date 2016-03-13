@@ -47,6 +47,9 @@ function analyzerReset() {
 function updateConf(canvas, conf) {
 	conf['step-x'] = canvas.width / conf['size-x'];
 	conf['step-y'] = canvas.height / conf['size-y'];
+	var small = conf['size-x'] > 15 || conf['size-y'] > 15;
+	conf['background-size'] = small ? 2 : 4;
+	conf['piece-size'] = small ? 3 : 6;
 }
 
 function drawBackground(canvas, conf) {
@@ -61,7 +64,7 @@ function drawBackground(canvas, conf) {
 		ctx.moveTo(0, i*conf['step-y']);
 		ctx.lineTo(canvas.clientWidth, i*conf['step-y']);
 	}
-	ctx.lineWidth = 4;
+	ctx.lineWidth = conf['background-size'];
 	ctx.strokeStyle = 'black';
 	ctx.stroke();
 }
@@ -87,7 +90,7 @@ function drawO(ctx, conf, x, y, progress) {
 	ctx.beginPath();
 	ctx.arc(centerX, centerY, radius, 0, progress * 2*Math.PI, false);
 	ctx.strokeStyle = 'red';
-	ctx.lineWidth = 6;
+	ctx.lineWidth = conf['piece-size'];
 	ctx.stroke();
 }
 
@@ -111,7 +114,7 @@ function drawX(ctx, conf, x, y, progress) {
 		ctx.lineTo(top + diff + coef * dirX, right - diff + coef * dirY);
 	}
 	ctx.strokeStyle = 'blue';
-	ctx.lineWidth = 6;
+	ctx.lineWidth = conf['piece-size'];
 	ctx.stroke();
 }
 
@@ -155,6 +158,7 @@ function redraw(canvas, conf, board) {
 function animateDraw(draw, ctx, conf, x, y) {
 	var progress = 0.0;
 	var positions = getPosition(x, y, conf);
+	var bgSize = conf['background-size'];
 	var top = positions.top, bottom = positions.bottom,
 			left = positions.left, right = positions.right;
 
@@ -162,8 +166,11 @@ function animateDraw(draw, ctx, conf, x, y) {
 		if(progress >= 1.0) {
 			clearInterval(intervalId);
 		}
-		draw(ctx, conf, x, y, progress);
+		ctx.clearRect(top + bgSize/2 + 1, left + bgSize/2 + 1,
+									conf['step-y'] - bgSize - 2, conf['step-x'] - bgSize - 2);
 		progress += 0.05;
+		ctx.fillStyle = 'white';
+		draw(ctx, conf, x, y, progress);
 	};
 	var intervalId = setInterval(call, 10);
 }
@@ -248,8 +255,8 @@ function startGame() {
 		"max-x-size": 700,
 		"max-y-size": 550,
 		"win-size": 4,
-		"size-x": 8,
-		"size-y": 6,
+		"size-x": 18,
+		"size-y": 8,
 		"scale": 0.6,
 		"next-move": "x"
 	};

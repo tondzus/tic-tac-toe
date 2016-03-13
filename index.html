@@ -6,22 +6,24 @@
 <script src="tic-tac-toe.js"></script>
 <style>
 body {
-	background-color: #ececec;
+	margin: 0;
+	background-color: #f8f8ff;
 }
 .center {
-	width: 100%;
 	text-align: center;
 }
-#game-canvas {
-	background-color: #FFFFFF;
-	display: inline-block;
+#game-wrap {
+	border: solid 1px;
+	padding: 1em;
 	box-shadow: 10px 10px 5px #888888;
+	display: inline-block;
+	background-color: #FFFFFF;
 }
 </style>
 </head>
-<body>
-<div id="tic-tac-toe" class="center">
-	<h1>Tic Tac Toe</h1>
+<body class="center">
+<h1>Tic Tac Toe</h1>
+<div id="game-wrap" class="center">
 	<canvas id="game-canvas">
 	Your browser does not support canvas element :(
 	</canvas>
