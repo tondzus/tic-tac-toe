@@ -61,32 +61,55 @@ function drawBackground(canvas, conf) {
 		ctx.moveTo(0, i*conf['step-y']);
 		ctx.lineTo(canvas.clientWidth, i*conf['step-y']);
 	}
-	ctx.closePath();
 	ctx.lineWidth = 4;
 	ctx.strokeStyle = 'black';
 	ctx.stroke();
 }
 
-function drawO(ctx, scale, top, bottom, left, right) {
-	radius = ((bottom - top) / 2) * scale;
+function getPosition(x, y, conf) {
+	return {
+		"top": x * conf['step-x'],
+		"bottom": (x + 1) * conf['step-x'],
+		"left": y * conf['step-y'],
+		"right": (y + 1) * conf['step-y']
+	};
+}
+
+function drawO(ctx, conf, x, y, progress) {
+	progress = Math.max(Math.min(progress, 1), 0);
+	var positions = getPosition(x, y, conf);
+	var top = positions.top, bottom = positions.bottom,
+			left = positions.left, right = positions.right;
+
+	radius = ((bottom - top) / 2) * conf.scale;
 	centerX = top + ((bottom - top) / 2);
 	centerY = left + ((right - left) / 2);
 	ctx.beginPath();
-	ctx.arc(centerX, centerY, radius, 0, 2*Math.PI, false);
-	ctx.closePath();
+	ctx.arc(centerX, centerY, radius, 0, progress * 2*Math.PI, false);
 	ctx.strokeStyle = 'red';
 	ctx.lineWidth = 6;
 	ctx.stroke();
 }
 
-function drawX(ctx, scale, top, bottom, left, right) {
-	diff = ((bottom - top) * (1 - scale)) / 2;
+function drawX(ctx, conf, x, y, progress) {
+	progress = Math.max(Math.min(progress, 1), 0);
+	var positions = getPosition(x, y, conf);
+	var top = positions.top, bottom = positions.bottom,
+			left = positions.left, right = positions.right;
+
+	diff = ((bottom - top) * (1 - conf.scale)) / 2;
 	ctx.beginPath();
+	var dirX = bottom - diff - top - diff,
+			dirY = right - diff - left - diff,
+			coef = Math.min(progress, 0.5) * 2;
 	ctx.moveTo(top + diff, left + diff);
-	ctx.lineTo(bottom - diff, right - diff);
-	ctx.moveTo(top + diff, right - diff);
-	ctx.lineTo(bottom - diff, left + diff);
-	ctx.closePath();
+	ctx.lineTo(top + diff + coef * dirX, left + diff + coef * dirY);
+	if(progress > 0.5) {
+		dirY *= -1;
+		coef = Math.min(progress - 0.5, 0.5) * 2;
+		ctx.moveTo(top + diff, right - diff);
+		ctx.lineTo(top + diff + coef * dirX, right - diff + coef * dirY);
+	}
 	ctx.strokeStyle = 'blue';
 	ctx.lineWidth = 6;
 	ctx.stroke();
@@ -96,13 +119,9 @@ function drawPieces(canvas, conf, board) {
 	for(var x=0; x < conf['size-x']; x++) {
 		for(var y=0; y < conf['size-y']; y++) {
 			if(board[x][y] == 'x')
-				drawX(canvas.getContext('2d'), conf.scale,
-							 x*conf['step-x'], (x+1)*conf['step-x'],
-							 y*conf['step-y'], (y+1)*conf['step-y']);
+				drawX(canvas.getContext('2d'), conf, x, y, 1);
 			if(board[x][y] == 'o')
-				drawO(canvas.getContext('2d'), conf.scale,
-							 x*conf['step-x'], (x+1)*conf['step-x'],
-							 y*conf['step-y'], (y+1)*conf['step-y']);
+				drawO(canvas.getContext('2d'), conf, x, y, 1);
 		}
 	}
 }
@@ -133,6 +152,22 @@ function redraw(canvas, conf, board) {
 	drawPieces(canvas, conf, board);
 }
 
+function animateDraw(draw, ctx, conf, x, y) {
+	var progress = 0.0;
+	var positions = getPosition(x, y, conf);
+	var top = positions.top, bottom = positions.bottom,
+			left = positions.left, right = positions.right;
+
+	var call = function() {
+		if(progress >= 1.0) {
+			clearInterval(intervalId);
+		}
+		draw(ctx, conf, x, y, progress);
+		progress += 0.05;
+	};
+	var intervalId = setInterval(call, 10);
+}
+
 function userInput(canvas, conf, board, event) {
 	var xPix = event.pageX - canvas.offsetLeft,
 		  yPix = event.pageY - canvas.offsetTop;
@@ -141,7 +176,13 @@ function userInput(canvas, conf, board, event) {
 
 	if(board[x][y] == '-') {
 		board[x][y] = conf['next-move'];
-		conf['next-move'] = conf['next-move'] == 'x' ? 'o' : 'x';
+		if(conf['next-move'] == 'x') {
+			conf['next-move'] = 'o';
+			animateDraw(drawX, canvas.getContext('2d'), conf, x, y);
+		}else {
+			conf['next-move'] = 'x';
+			animateDraw(drawO, canvas.getContext('2d'), conf, x, y);
+		}
 	}
 }
 
@@ -218,8 +259,8 @@ function startGame() {
 	redraw(canvas, conf, board);
 
 	var userInputListener = function(event) {
-		userInput(canvas, conf, board, event);
 		redraw(canvas, conf, board);
+		userInput(canvas, conf, board, event);
 		victorious = checkVictory(canvas, conf, board);
 		console.log(victorious);
 		if(victorious !== null)
