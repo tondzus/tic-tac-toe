@@ -110,12 +110,12 @@ function drawBackground(canvas, conf) {
 	ctx.clearRect(0, 0, canvas.width, canvas.height);
 	ctx.beginPath();
 	for(var i=1; i < conf['size-x']; i++) {
-		ctx.moveTo(i*conf['step-x'], 0);
-		ctx.lineTo(i*conf['step-x'], canvas.clientHeight);
+		ctx.moveTo(i*conf['step-x'], conf['step-y']/4);
+		ctx.lineTo(i*conf['step-x'], canvas.clientHeight-conf['step-y']/4);
 	}
 	for(i=1; i < conf['size-y']; i++) {
-		ctx.moveTo(0, i*conf['step-y']);
-		ctx.lineTo(canvas.clientWidth, i*conf['step-y']);
+		ctx.moveTo(conf['step-x']/4, i*conf['step-y']);
+		ctx.lineTo(canvas.clientWidth-conf['step-x']/4, i*conf['step-y']);
 	}
 	ctx.lineWidth = conf['background-size'];
 	ctx.strokeStyle = 'black';
@@ -277,8 +277,8 @@ function startGame() {
 		"max-x-size": 700,
 		"max-y-size": 550,
 		"win-size": 4,
-		"size-x": 18,
-		"size-y": 8,
+		"size-x": 14,
+		"size-y": 7,
 		"scale": 0.6,
 		"next-move": "x"
 	};
