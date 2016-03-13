@@ -43,6 +43,7 @@ function analyzerReset() {
 	this.lastMark = '';
 }
 
+
 function updateConf(canvas, conf) {
 	conf['step-x'] = canvas.width / conf['size-x'];
 	conf['step-y'] = canvas.height / conf['size-y'];
@@ -118,8 +119,12 @@ function createEmptyGameboard(conf) {
 }
 
 function initCanvas(canvas, conf) {
-	canvas.width = conf['size-x'] * conf['square-size'];
-	canvas.height = conf['size-y'] * conf['square-size'];
+	var cw = conf['size-x'] * conf['square-size'];
+	var ch = conf['size-y'] * conf['square-size'];
+	var coefX = (cw > conf['max-x-size']) ? conf['max-x-size'] / cw : 1;
+	var coefY = (ch > conf['max-y-size']) ? conf['max-y-size'] / ch : 1;
+	canvas.width = cw * Math.min(coefX, coefY);
+	canvas.height = ch * Math.min(coefX, coefY);
 }
 
 function redraw(canvas, conf, board) {
@@ -199,9 +204,11 @@ function startGame() {
 	var canvas = document.getElementById("game-canvas");
 	var conf = {
 		"square-size": 150,
-		"win-size": 3,
-		"size-x": 3,
-		"size-y": 3,
+		"max-x-size": 700,
+		"max-y-size": 550,
+		"win-size": 4,
+		"size-x": 8,
+		"size-y": 6,
 		"scale": 0.6,
 		"next-move": "x"
 	};
